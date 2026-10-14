@@ -1,0 +1,3 @@
+"""
+Age of Modernity package.
+"""
