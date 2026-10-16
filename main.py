@@ -57,8 +57,7 @@ def run_game(headless_frames: int = 0):
 
         # Rendering pipeline
         renderer.render_map(game_state.map)
-        renderer.render_buildings(game_state.buildings)
-        renderer.render_units(game_state.units)
+        renderer.render_entities(game_state.buildings, game_state.units)
         renderer.render_combat_effects(game_state.combat_manager.effects)
 
         # UI Overlays

@@ -1,6 +1,6 @@
 {
   "save_name": "test_progress",
-  "timestamp": "2026-10-14 00:57:32",
+  "timestamp": "2026-10-15 20:57:29",
   "current_map_name": "Divided Sea",
   "economies": {
     "Player": {
@@ -16,7 +16,7 @@
   },
   "buildings": [
     {
-      "id": "3177daf3",
+      "id": "52163d7a",
       "type_name": "HQ",
       "faction": "Player",
       "tile_x": 4,
@@ -31,7 +31,7 @@
       "rally_point": null
     },
     {
-      "id": "6b8dc5a3",
+      "id": "8f6c583f",
       "type_name": "Farm",
       "faction": "Player",
       "tile_x": 4,
@@ -46,7 +46,7 @@
       "rally_point": null
     },
     {
-      "id": "ae4a41d8",
+      "id": "631d680a",
       "type_name": "Barracks",
       "faction": "Player",
       "tile_x": 9,
@@ -61,7 +61,7 @@
       "rally_point": null
     },
     {
-      "id": "44d9d1ae",
+      "id": "9ef61a29",
       "type_name": "Shipyard",
       "faction": "Player",
       "tile_x": 18,
@@ -76,7 +76,7 @@
       "rally_point": null
     },
     {
-      "id": "c8c8a086",
+      "id": "6752b7a9",
       "type_name": "HQ",
       "faction": "Enemy",
       "tile_x": 54,
@@ -91,7 +91,7 @@
       "rally_point": null
     },
     {
-      "id": "765e4d11",
+      "id": "163d5659",
       "type_name": "Factory",
       "faction": "Enemy",
       "tile_x": 50,
@@ -106,7 +106,7 @@
       "rally_point": null
     },
     {
-      "id": "687cb41d",
+      "id": "646c0a4e",
       "type_name": "Barracks",
       "faction": "Enemy",
       "tile_x": 48,
@@ -121,7 +121,7 @@
       "rally_point": null
     },
     {
-      "id": "53085e0b",
+      "id": "f5add825",
       "type_name": "Shipyard",
       "faction": "Enemy",
       "tile_x": 41,
@@ -138,7 +138,7 @@
   ],
   "units": [
     {
-      "id": "b111790b",
+      "id": "0b4786a4",
       "type_name": "Engineer",
       "faction": "Player",
       "x": 192.0,
@@ -153,7 +153,7 @@
       "_has_counted_work": false
     },
     {
-      "id": "2c9fed7e",
+      "id": "2578e0ed",
       "type_name": "Engineer",
       "faction": "Player",
       "x": 256.0,
@@ -168,7 +168,7 @@
       "_has_counted_work": false
     },
     {
-      "id": "faac3948",
+      "id": "71cf575b",
       "type_name": "Foot Soldier",
       "faction": "Player",
       "x": 384.0,
@@ -183,7 +183,7 @@
       "_has_counted_work": false
     },
     {
-      "id": "8fd72e67",
+      "id": "a86cfbef",
       "type_name": "Tank",
       "faction": "Player",
       "x": 448.0,
@@ -198,7 +198,7 @@
       "_has_counted_work": false
     },
     {
-      "id": "0bdf34ca",
+      "id": "c8f09275",
       "type_name": "Cannon",
       "faction": "Player",
       "x": 512.0,
@@ -213,7 +213,7 @@
       "_has_counted_work": false
     },
     {
-      "id": "42674f67",
+      "id": "c80c80e4",
       "type_name": "Torpedo Boat",
       "faction": "Player",
       "x": 832.0,
@@ -228,7 +228,7 @@
       "_has_counted_work": false
     },
     {
-      "id": "dc4bc1bf",
+      "id": "44ab656c",
       "type_name": "Destroyer",
       "faction": "Player",
       "x": 896.0,
@@ -243,7 +243,7 @@
       "_has_counted_work": false
     },
     {
-      "id": "2c6c2374",
+      "id": "def33faf",
       "type_name": "Battleship",
       "faction": "Player",
       "x": 832.0,
@@ -258,7 +258,7 @@
       "_has_counted_work": false
     },
     {
-      "id": "3a8f18a2",
+      "id": "d93b52b6",
       "type_name": "Foot Soldier",
       "faction": "Enemy",
       "x": 1472.0,
@@ -273,7 +273,7 @@
       "_has_counted_work": false
     },
     {
-      "id": "95802b7d",
+      "id": "12d9c83c",
       "type_name": "Tank",
       "faction": "Enemy",
       "x": 1504.0,
@@ -288,7 +288,7 @@
       "_has_counted_work": false
     },
     {
-      "id": "ad9fffc7",
+      "id": "e38adcf8",
       "type_name": "Cannon",
       "faction": "Enemy",
       "x": 1568.0,
@@ -303,7 +303,7 @@
       "_has_counted_work": false
     },
     {
-      "id": "f874d68e",
+      "id": "900c448f",
       "type_name": "Torpedo Boat",
       "faction": "Enemy",
       "x": 1152.0,
@@ -318,7 +318,7 @@
       "_has_counted_work": false
     },
     {
-      "id": "f431c3b6",
+      "id": "8c49dd3b",
       "type_name": "Destroyer",
       "faction": "Enemy",
       "x": 1120.0,

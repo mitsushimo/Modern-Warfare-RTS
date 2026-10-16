@@ -52,6 +52,8 @@ class Unit(Entity):
         self.cooldown_timer: float = 0.0
         self.assigned_building: Optional[Any] = None
         self._has_counted_work: bool = False
+        self.heading_angle: float = math.pi * 0.25
+        self.turret_angle: float = math.pi * 0.25
 
     def distance_to(self, target: Entity) -> float:
         return math.hypot(target.x - self.x, target.y - self.y)
@@ -76,9 +78,33 @@ class Unit(Entity):
         if dist > 0.001:
             self.vx = (dx / dist) * self.speed
             self.vy = (dy / dist) * self.speed
+            self.heading_angle = math.atan2(self.vy, self.vx)
+            if self.state != UnitState.ATTACKING:
+                self.turret_angle = self.heading_angle
         else:
             self.vx = 0.0
             self.vy = 0.0
+
+    def get_compass_direction(self, projection_mode: str = "isometric") -> str:
+        """Returns 8-way compass sector ('n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw') for unit heading."""
+        return self._angle_to_compass(self.heading_angle, projection_mode)
+
+    def get_turret_compass_direction(self, projection_mode: str = "isometric") -> str:
+        """Returns 8-way compass sector for turret angle."""
+        return self._angle_to_compass(self.turret_angle, projection_mode)
+
+    def _angle_to_compass(self, world_angle: float, projection_mode: str) -> str:
+        if projection_mode == "isometric":
+            svx = math.cos(world_angle) - math.sin(world_angle)
+            svy = (math.cos(world_angle) + math.sin(world_angle)) * 0.5
+            screen_angle = math.atan2(svy, svx)
+        else:
+            screen_angle = world_angle
+
+        norm = (screen_angle + 2 * math.pi) % (2 * math.pi)
+        sector = int(((norm + math.pi / 8.0) % (2 * math.pi)) / (math.pi / 4.0))
+        names = ["e", "se", "s", "sw", "w", "nw", "n", "ne"]
+        return names[sector]
 
     def order_move(self, path: List[Tuple[float, float]]):
         self._detach_worker()
@@ -167,6 +193,9 @@ class Unit(Entity):
         else:
             self.vx = (dx / dist) * self.speed
             self.vy = (dy / dist) * self.speed
+            self.heading_angle = math.atan2(self.vy, self.vx)
+            if self.state != UnitState.ATTACKING:
+                self.turret_angle = self.heading_angle
             next_x = self.x + self.vx * delta_time
             next_y = self.y + self.vy * delta_time
 
@@ -241,6 +270,10 @@ class Unit(Entity):
             return None
 
         dist = self.distance_to(self.target_entity)
+        tdx = self.target_entity.x - self.x
+        tdy = self.target_entity.y - self.y
+        if math.hypot(tdx, tdy) > 0.001:
+            self.turret_angle = math.atan2(tdy, tdx)
         if dist <= self.attack_range:
             self.path = []
             self.vx = 0.0

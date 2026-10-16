@@ -40,7 +40,10 @@ class GameState:
         if map_name not in MAP_PRESETS:
             map_name = "Divided Sea"
         self.current_map_name = map_name
-        self.map = GameMap(map_name=map_name)
+        preset = MAP_PRESETS[map_name]
+        width = preset.get("width", 64)
+        height = preset.get("height", 48)
+        self.map = GameMap(width=width, height=height, map_name=map_name)
         self.economies = {
             Faction.PLAYER: FactionEconomy(Faction.PLAYER),
             Faction.ENEMY: FactionEconomy(Faction.ENEMY),
@@ -66,6 +69,8 @@ class GameState:
             self._init_shattered_isthmus()
         elif map_name == "Inland Sea":
             self._init_inland_sea()
+        elif map_name == "Grand Archipelago":
+            self._init_grand_archipelago()
         else:
             self._init_divided_sea()
 
@@ -200,6 +205,46 @@ class GameState:
         self.spawn_unit("Tank", Faction.ENEMY, 42 * TILE_SIZE, 34 * TILE_SIZE)
         self.spawn_unit("Destroyer", Faction.ENEMY, 38 * TILE_SIZE, 24 * TILE_SIZE)
 
+    def _init_grand_archipelago(self):
+        """Initializes starter bases and armed forces on the vast 96x64 Grand Archipelago."""
+        # PLAYER BASE (Southwest Island)
+        self.place_building("HQ", Faction.PLAYER, 8, 42, under_construction=False)
+        self.place_building("Farm", Faction.PLAYER, 8, 38, under_construction=False)
+        self.place_building("Factory", Faction.PLAYER, 8, 47, under_construction=False)
+        self.place_building("Barracks", Faction.PLAYER, 14, 42, under_construction=False)
+        self.place_building("Refinery", Faction.PLAYER, 14, 47, under_construction=False)
+        self.place_building("Shipyard", Faction.PLAYER, 20, 39, under_construction=False)
+
+        # Starter Player Forces (Amphibious Task Force)
+        self.spawn_unit("Engineer", Faction.PLAYER, 10 * TILE_SIZE, 45 * TILE_SIZE)
+        self.spawn_unit("Engineer", Faction.PLAYER, 12 * TILE_SIZE, 45 * TILE_SIZE)
+        self.spawn_unit("Foot Soldier", Faction.PLAYER, 17 * TILE_SIZE, 41 * TILE_SIZE)
+        self.spawn_unit("Foot Soldier", Faction.PLAYER, 17 * TILE_SIZE, 43 * TILE_SIZE)
+        self.spawn_unit("Foot Soldier", Faction.PLAYER, 17 * TILE_SIZE, 45 * TILE_SIZE)
+        self.spawn_unit("Tank", Faction.PLAYER, 19 * TILE_SIZE, 43 * TILE_SIZE)
+        self.spawn_unit("Tank", Faction.PLAYER, 19 * TILE_SIZE, 45 * TILE_SIZE)
+        self.spawn_unit("Cannon", Faction.PLAYER, 16 * TILE_SIZE, 44 * TILE_SIZE)
+        self.spawn_unit("Torpedo Boat", Faction.PLAYER, 25 * TILE_SIZE, 38 * TILE_SIZE)
+        self.spawn_unit("Destroyer", Faction.PLAYER, 27 * TILE_SIZE, 37 * TILE_SIZE)
+        self.spawn_unit("Battleship", Faction.PLAYER, 25 * TILE_SIZE, 36 * TILE_SIZE)
+
+        # ENEMY BASE (Northeast Fortress)
+        self.place_building("HQ", Faction.ENEMY, 82, 16, under_construction=False)
+        self.place_building("Farm", Faction.ENEMY, 82, 12, under_construction=False)
+        self.place_building("Factory", Faction.ENEMY, 82, 21, under_construction=False)
+        self.place_building("Barracks", Faction.ENEMY, 76, 16, under_construction=False)
+        self.place_building("Refinery", Faction.ENEMY, 76, 21, under_construction=False)
+        self.place_building("Shipyard", Faction.ENEMY, 71, 18, under_construction=False)
+
+        # Starter Enemy Forces
+        self.spawn_unit("Foot Soldier", Faction.ENEMY, 74 * TILE_SIZE, 17 * TILE_SIZE)
+        self.spawn_unit("Foot Soldier", Faction.ENEMY, 74 * TILE_SIZE, 19 * TILE_SIZE)
+        self.spawn_unit("Tank", Faction.ENEMY, 72 * TILE_SIZE, 17 * TILE_SIZE)
+        self.spawn_unit("Cannon", Faction.ENEMY, 72 * TILE_SIZE, 21 * TILE_SIZE)
+        self.spawn_unit("Torpedo Boat", Faction.ENEMY, 68 * TILE_SIZE, 15 * TILE_SIZE)
+        self.spawn_unit("Destroyer", Faction.ENEMY, 70 * TILE_SIZE, 14 * TILE_SIZE)
+        self.spawn_unit("Battleship", Faction.ENEMY, 66 * TILE_SIZE, 14 * TILE_SIZE)
+
     def spawn_unit(self, unit_type_name: str, faction: Faction, x: float, y: float) -> Unit:
         spawn_x, spawn_y = float(x), float(y)
         for other in self.units:
@@ -264,6 +309,122 @@ class GameState:
                 if min_x <= unit.x <= max_x and min_y <= unit.y <= max_y:
                     unit.is_selected = True
                     self.selected_entities.append(unit)
+
+    def select_box_screen(self, screen_rect, camera, asset_manager=None):
+        """Marquee box selection checking screen-space unit bounding."""
+        self.clear_selection()
+        zoom = getattr(camera, "zoom", 1.0)
+        for unit in self.units:
+            if unit.faction == Faction.PLAYER and unit.is_alive:
+                sx, sy = camera.world_to_screen(unit.x, unit.y)
+                if screen_rect.collidepoint(sx, sy):
+                    unit.is_selected = True
+                    self.selected_entities.append(unit)
+                elif asset_manager:
+                    proj_mode = getattr(camera, "projection_mode", "isometric")
+                    hull_dir = unit.get_compass_direction(projection_mode=proj_mode)
+                    s = asset_manager.get_unit_sprite(unit.type_name, zoom, direction=hull_dir)
+                    if s and screen_rect.colliderect(s.get_rect(center=(sx, sy))):
+                        unit.is_selected = True
+                        self.selected_entities.append(unit)
+
+    def _unit_hit_test(self, unit: Unit, sx: int, sy: int, camera, asset_manager=None) -> bool:
+        """Checks if screen coordinate (sx, sy) hits any part of the unit's displayed image or core footprint."""
+        u_sx, u_sy = camera.world_to_screen(unit.x, unit.y)
+        zoom = getattr(camera, "zoom", 1.0)
+
+        if asset_manager:
+            proj_mode = getattr(camera, "projection_mode", "isometric")
+            hull_dir = unit.get_compass_direction(projection_mode=proj_mode)
+            turret_dir = unit.get_turret_compass_direction(projection_mode=proj_mode)
+
+            hull_sprite, turret_sprite = asset_manager.get_unit_parts(unit.type_name, zoom, hull_dir, turret_dir)
+            if not hull_sprite and not turret_sprite:
+                hull_sprite = asset_manager.get_unit_sprite(unit.type_name, zoom, direction=hull_dir)
+
+            if hull_sprite:
+                h_rect = hull_sprite.get_rect(center=(u_sx, u_sy))
+                if h_rect.collidepoint(sx, sy):
+                    px = int(sx - h_rect.left)
+                    py = int(sy - h_rect.top)
+                    if 0 <= px < hull_sprite.get_width() and 0 <= py < hull_sprite.get_height():
+                        if hull_sprite.get_at((px, py)).a > 10:
+                            return True
+
+            if turret_sprite:
+                t_rect = turret_sprite.get_rect(center=(u_sx, u_sy - int(3 * zoom)))
+                if t_rect.collidepoint(sx, sy):
+                    px = int(sx - t_rect.left)
+                    py = int(sy - t_rect.top)
+                    if 0 <= px < turret_sprite.get_width() and 0 <= py < turret_sprite.get_height():
+                        if turret_sprite.get_at((px, py)).a > 10:
+                            return True
+
+        # Fallback to core radius check
+        dist = math.hypot(sx - u_sx, sy - u_sy)
+        return dist <= max(unit.radius * zoom, 16.0)
+
+    def _building_hit_test(self, bld: Building, sx: int, sy: int, wx: float, wy: float, camera, asset_manager=None) -> bool:
+        """Checks if screen coordinate (sx, sy) or world coordinate (wx, wy) hits the building."""
+        if bld.contains_point(wx, wy):
+            return True
+
+        if getattr(camera, "projection_mode", "isometric") == "isometric":
+            zoom = getattr(camera, "zoom", 1.0)
+            if asset_manager:
+                sprite = asset_manager.get_building_sprite(bld.type_name, zoom)
+                if sprite:
+                    wx1 = (bld.tile_x + bld.width_tiles) * TILE_SIZE
+                    wy1 = (bld.tile_y + bld.height_tiles) * TILE_SIZE
+                    gb = camera.world_to_screen(wx1, wy1)
+                    s_rect = sprite.get_rect(midbottom=gb)
+                    if s_rect.collidepoint(sx, sy):
+                        return True
+            else:
+                ext_h = int((bld.width_tiles + bld.height_tiles) * 10 * zoom)
+                wx_eff, wy_eff = camera.screen_to_world(sx, sy + ext_h // 2)
+                if bld.contains_point(wx_eff, wy_eff):
+                    return True
+        return False
+
+    def select_single_screen(self, sx: int, sy: int, camera, asset_manager=None):
+        """Selects the topmost entity closest to the screen click coordinate."""
+        self.clear_selection()
+        zoom = getattr(camera, "zoom", 1.0)
+
+        # Depth sorted: frontmost entities (greater x+y) are drawn on top, so test them first
+        depth_sorted_units = sorted(self.units, key=lambda u: u.x + u.y, reverse=True)
+
+        # 1. Check Player units
+        for unit in depth_sorted_units:
+            if unit.faction == Faction.PLAYER and unit.is_alive:
+                if self._unit_hit_test(unit, sx, sy, camera, asset_manager):
+                    unit.is_selected = True
+                    self.selected_entities.append(unit)
+                    return
+
+        # 2. Check Player buildings
+        wx, wy = camera.screen_to_world(sx, sy)
+        for bld in reversed(self.buildings):
+            if bld.faction == Faction.PLAYER and self._building_hit_test(bld, sx, sy, wx, wy, camera, asset_manager):
+                bld.is_selected = True
+                self.selected_entities.append(bld)
+                return
+
+        # 3. Check Enemy units
+        for unit in depth_sorted_units:
+            if unit.faction != Faction.PLAYER and unit.is_alive:
+                if self._unit_hit_test(unit, sx, sy, camera, asset_manager):
+                    unit.is_selected = True
+                    self.selected_entities.append(unit)
+                    return
+
+        # 4. Check Enemy buildings
+        for bld in reversed(self.buildings):
+            if self._building_hit_test(bld, sx, sy, wx, wy, camera, asset_manager):
+                bld.is_selected = True
+                self.selected_entities.append(bld)
+                return
 
     def get_entity_at(self, wx: float, wy: float) -> Optional[Entity]:
         for unit in reversed(self.units):
@@ -342,8 +503,30 @@ class GameState:
 
         return [assigned_slots[i] or (target_wx, target_wy) for i in range(n)]
 
-    def issue_right_click_order(self, target_wx: float, target_wy: float):
-        target_ent = self.get_entity_at(target_wx, target_wy)
+    def issue_right_click_order(
+        self,
+        target_wx: float,
+        target_wy: float,
+        screen_pos: Optional[Tuple[int, int]] = None,
+        camera=None,
+        asset_manager=None
+    ):
+        target_ent = None
+        if screen_pos and camera:
+            sx, sy = screen_pos
+            depth_sorted_units = sorted(self.units, key=lambda u: u.x + u.y, reverse=True)
+            for unit in depth_sorted_units:
+                if unit.is_alive and self._unit_hit_test(unit, sx, sy, camera, asset_manager):
+                    target_ent = unit
+                    break
+            if not target_ent:
+                for bld in reversed(self.buildings):
+                    if bld.is_alive and self._building_hit_test(bld, sx, sy, target_wx, target_wy, camera, asset_manager):
+                        target_ent = bld
+                        break
+        if not target_ent:
+            target_ent = self.get_entity_at(target_wx, target_wy)
+
         selected_units = [e for e in self.selected_entities if isinstance(e, Unit) and e.faction == Faction.PLAYER]
 
         if not selected_units:
@@ -633,7 +816,10 @@ class GameState:
 
         map_name = data.get("current_map_name", "Divided Sea")
         self.current_map_name = map_name
-        self.map = GameMap(map_name=map_name)
+        preset = MAP_PRESETS.get(map_name, {})
+        width = preset.get("width", 64)
+        height = preset.get("height", 48)
+        self.map = GameMap(width=width, height=height, map_name=map_name)
         self.map.building_grid.clear()
         self.units.clear()
         self.buildings.clear()

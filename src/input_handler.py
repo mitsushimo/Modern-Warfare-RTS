@@ -104,13 +104,19 @@ class InputHandler:
                 if self.show_map_menu or getattr(game_state, "is_paused", False):
                     continue
 
-                # Hotkeys 1-5 for HUD actions
-                if event.key in (pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5):
+                # Hotkeys 1-6 for HUD actions
+                if event.key in (pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6):
                     hk_str = str(event.key - pygame.K_0)
                     for btn in renderer.hud_buttons:
                         if btn.get("hotkey") == hk_str and btn.get("can_afford"):
                             self._trigger_hud_action(btn, game_state)
                             break
+
+            elif event.type == pygame.MOUSEWHEEL:
+                if not self.show_map_menu and not getattr(game_state, "is_paused", False):
+                    if 36 <= mouse_pos[1] < hud_y:
+                        factor = 1.15 if event.y > 0 else (1.0 / 1.15 if event.y < 0 else 1.0)
+                        renderer.camera.zoom_at(mouse_pos[0], mouse_pos[1], factor)
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # Left click
@@ -177,6 +183,16 @@ class InputHandler:
                             self.show_map_menu = False
                             continue
 
+                        # Pagination buttons
+                        page_clicked = False
+                        for p_btn in getattr(renderer, "modal_page_buttons", []):
+                            if p_btn["rect"].collidepoint(mouse_pos):
+                                renderer.map_modal_page += p_btn["page_delta"]
+                                page_clicked = True
+                                break
+                        if page_clicked:
+                            continue
+
                         clicked_map = None
                         for btn in getattr(renderer, "modal_buttons", []):
                             if btn["rect"].collidepoint(mouse_pos):
@@ -185,6 +201,7 @@ class InputHandler:
 
                         if clicked_map:
                             game_state.load_map(clicked_map)
+                            renderer.camera.set_map_dimensions(game_state.map.width, game_state.map.height)
                             renderer.camera.x = 0.0
                             renderer.camera.y = 0.0
                             self.show_map_menu = False
@@ -202,10 +219,21 @@ class InputHandler:
                         total_h = game_state.map.height * TILE_SIZE
                         rel_x = (mouse_pos[0] - renderer.minimap_rect.x) / float(renderer.minimap_rect.width)
                         rel_y = (mouse_pos[1] - renderer.minimap_rect.y) / float(renderer.minimap_rect.height)
-                        target_wx = rel_x * total_w
-                        target_wy = rel_y * total_h
-                        renderer.camera.x = max(0.0, min(renderer.camera.max_x, target_wx - renderer.screen_width / 2.0))
-                        renderer.camera.y = max(0.0, min(renderer.camera.max_y, target_wy - (renderer.screen_height - 140) / 2.0))
+                        vis_w = renderer.screen_width / renderer.camera.zoom
+                        vis_h = (renderer.screen_height - 140) / renderer.camera.zoom
+
+                        if getattr(renderer.camera, "projection_mode", "isometric") == "isometric":
+                            total_proj_w = (game_state.map.width + game_state.map.height) * TILE_SIZE
+                            total_proj_h = (game_state.map.width + game_state.map.height) * TILE_SIZE * 0.5
+                            target_u = rel_x * total_proj_w
+                            target_v = rel_y * total_proj_h
+                            renderer.camera.x = max(0.0, min(renderer.camera.max_x, target_u - vis_w / 2.0))
+                            renderer.camera.y = max(0.0, min(renderer.camera.max_y, target_v - vis_h / 2.0))
+                        else:
+                            target_wx = rel_x * total_w
+                            target_wy = rel_y * total_h
+                            renderer.camera.x = max(0.0, min(renderer.camera.max_x, target_wx - vis_w / 2.0))
+                            renderer.camera.y = max(0.0, min(renderer.camera.max_y, target_wy - vis_h / 2.0))
                         continue
 
                     # Top Bar Map Button (clicking this is the only way to open map selector)
@@ -244,7 +272,18 @@ class InputHandler:
                     else:
                         if 36 <= mouse_pos[1] < hud_y:
                             wx, wy = renderer.camera.screen_to_world(mouse_pos[0], mouse_pos[1])
-                            game_state.issue_right_click_order(wx, wy)
+                            game_state.issue_right_click_order(
+                                wx, wy,
+                                screen_pos=mouse_pos,
+                                camera=renderer.camera,
+                                asset_manager=getattr(renderer, "asset_manager", None)
+                            )
+
+                elif event.button in (4, 5):  # Mouse wheel up (4) / down (5) fallback
+                    if not self.show_map_menu and not getattr(game_state, "is_paused", False):
+                        if 36 <= mouse_pos[1] < hud_y:
+                            factor = 1.15 if event.button == 4 else (1.0 / 1.15)
+                            renderer.camera.zoom_at(mouse_pos[0], mouse_pos[1], factor)
 
             elif event.type == pygame.MOUSEBUTTONUP:
                 if self.show_map_menu or getattr(game_state, "is_paused", False):
@@ -257,12 +296,14 @@ class InputHandler:
                         dx = abs(mouse_pos[0] - self.drag_start[0])
                         dy = abs(mouse_pos[1] - self.drag_start[1])
                         if dx > 8 or dy > 8:
-                            w1, h1 = renderer.camera.screen_to_world(self.drag_start[0], self.drag_start[1])
-                            w2, h2 = renderer.camera.screen_to_world(mouse_pos[0], mouse_pos[1])
-                            game_state.select_box(w1, h1, w2, h2)
+                            rect = pygame.Rect(
+                                min(self.drag_start[0], mouse_pos[0]),
+                                min(self.drag_start[1], mouse_pos[1]),
+                                dx, dy
+                            )
+                            game_state.select_box_screen(rect, renderer.camera, getattr(renderer, "asset_manager", None))
                         else:
-                            wx, wy = renderer.camera.screen_to_world(mouse_pos[0], mouse_pos[1])
-                            game_state.select_single(wx, wy)
+                            game_state.select_single_screen(mouse_pos[0], mouse_pos[1], renderer.camera, getattr(renderer, "asset_manager", None))
                     self.drag_start = None
                     self.is_dragging = False
 
@@ -273,7 +314,7 @@ class InputHandler:
             return
 
         keys = pygame.key.get_pressed()
-        pan_speed = 500.0 * delta_time
+        pan_speed = (500.0 / getattr(renderer.camera, "zoom", 1.0)) * delta_time
 
         dx, dy = 0.0, 0.0
         if keys[pygame.K_a] or keys[pygame.K_LEFT]:

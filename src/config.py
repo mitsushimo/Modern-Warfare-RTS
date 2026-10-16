@@ -100,6 +100,14 @@ MAP_PRESETS = {
         "description": "A central body of water encircled by northern and southern land corridors connecting both factions.",
         "land_connected": True,
     },
+    "Grand Archipelago": {
+        "name": "Grand Archipelago",
+        "tag": "Large Showcase Theater",
+        "description": "Vast 96x64 theater of war. Intricate organic coastlines, winding straits, and central archipelagic chains ideal for showcasing isometric 2.5D view and zooming.",
+        "land_connected": True,
+        "width": 96,
+        "height": 64,
+    },
 }
 
 UNIT_TYPES = {
@@ -195,7 +203,7 @@ UNIT_TYPES = {
         "weapon_type": "torpedo",
         "speed": 2.6,
         "sight_range": 6.5,
-        "radius": 12,
+        "radius": 9,
         "symbol": "TB",
     },
     "Destroyer": {
@@ -233,7 +241,7 @@ UNIT_TYPES = {
         "weapon_type": "artillery_shell",
         "speed": 1.2,
         "sight_range": 9.5,
-        "radius": 18,
+        "radius": 36,
         "symbol": "BB",
     },
 }
@@ -246,7 +254,7 @@ BUILDING_TYPES = {
         "height_tiles": 3,
         "max_hp": 1200,
         "armor": 10,
-        "cost": {ResourceType.FOOD: 0, ResourceType.STEEL: 250, ResourceType.FUEL: 0},
+        "cost": {ResourceType.FOOD: 60, ResourceType.STEEL: 250, ResourceType.FUEL: 50},
         "build_time": 25.0,
         "produces": ["Engineer"],
         "coastal_required": False,

@@ -29,6 +29,8 @@ class GameMap:
             self._generate_shattered_isthmus()
         elif map_name == "Inland Sea":
             self._generate_inland_sea()
+        elif map_name == "Grand Archipelago":
+            self._generate_grand_archipelago()
         else:
             self._generate_divided_sea()
 
@@ -94,6 +96,68 @@ class GameMap:
                     self.tiles[y][x] = TerrainType.WATER
                 else:
                     self.tiles[y][x] = TerrainType.LAND
+
+    def _generate_grand_archipelago(self):
+        """Generates a vast 96x64 archipelago with natural fractal coastlines, winding straits, and central stepping isles."""
+        player_cx, player_cy = 14.0, 44.0
+        enemy_cx, enemy_cy = 82.0, 20.0
+
+        islands = [
+            (player_cx, player_cy, 12.0, 10.0),
+            (enemy_cx, enemy_cy, 12.0, 10.0),
+            (34.0, 40.0, 9.0, 7.5),
+            (48.0, 32.0, 11.0, 8.5),
+            (64.0, 24.0, 9.0, 7.5),
+            (46.0, 12.0, 8.0, 6.0),
+            (52.0, 52.0, 8.0, 6.0),
+        ]
+
+        for y in range(self.height):
+            for x in range(self.width):
+                min_island_val = 999.0
+                for cx, cy, rx, ry in islands:
+                    d = (((x - cx) / rx) ** 2) + (((y - cy) / ry) ** 2)
+                    if d < min_island_val:
+                        min_island_val = d
+
+                # Multi-octave harmonic noise for organic fractal coastlines
+                w1 = 0.40 * math.sin(x * 0.15 + y * 0.12)
+                w2 = 0.22 * math.cos(x * 0.31 - y * 0.25)
+                w3 = 0.10 * math.sin(x * 0.55 + y * 0.48)
+                noise = w1 + w2 + w3
+
+                # Natural sandbar connecting the islands across the archipelago
+                t = (x - 14.0) / (82.0 - 14.0)
+                if 0.0 <= t <= 1.0:
+                    bridge_y = 44.0 * (1 - t)**2 + 32.0 * 2 * t * (1 - t) + 20.0 * t**2
+                    bridge_dist = abs(y - bridge_y)
+                    bridge_noise = 0.3 * math.sin(x * 0.4)
+                    if bridge_dist <= 2.2 + bridge_noise:
+                        min_island_val = min(min_island_val, 0.7)
+
+                if min_island_val + noise <= 1.0:
+                    self.tiles[y][x] = TerrainType.LAND
+                else:
+                    self.tiles[y][x] = TerrainType.WATER
+
+        # Guaranteed solid terrain for base perimeters
+        for py in range(35, 52):
+            for px in range(6, 22):
+                if 0 <= px < self.width and 0 <= py < self.height:
+                    self.tiles[py][px] = TerrainType.LAND
+
+        for ey in range(10, 27):
+            for ex in range(74, 90):
+                if 0 <= ex < self.width and 0 <= ey < self.height:
+                    self.tiles[ey][ex] = TerrainType.LAND
+
+        # Ensure coastal water for shipyards
+        if 41 < self.height and 25 < self.width:
+            self.tiles[40][25] = TerrainType.WATER
+            self.tiles[41][25] = TerrainType.WATER
+        if 19 < self.height and 68 < self.width:
+            self.tiles[18][68] = TerrainType.WATER
+            self.tiles[19][68] = TerrainType.WATER
 
     def _apply_coasts(self):
         """Marks any land tile immediately bordering water as COAST."""
