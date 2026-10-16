@@ -4,6 +4,9 @@ A modern warfare Real-Time Strategy (RTS) game built in **Python** with **`pygam
 
 Control an industrial nation, manage key wartime resources (Food, Steel, Fuel), and command combined land and naval forces against opposing nations.
 
+<img width="1915" height="1079" alt="image" src="https://github.com/user-attachments/assets/59215205-eb1e-4868-ab73-accf3f02b8e5" />
+
+
 ---
 
 ## 🎮 Quick Start
